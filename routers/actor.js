@@ -1,14 +1,17 @@
+const { json } = require('express');
 const mongoose = require('mongoose');
 const Actor = require('../models/actor');
 const Movie = require('../models/movie');
 module.exports = {
     getAll: function (req, res) {
-        Actor.find(function (err, actors) {
-            if (err) {
-                return res.status(404).json(err);
-            } else {
-                res.json(actors);
-            }
+        Actor.find()
+            .populate('movies')
+            .exec(function(err, actors) {
+                if (err) {
+                    return res.status(404).json(err);
+                } else {
+                    res.json(actors);
+                }
         });
     },
     createOne: function (req, res) {
@@ -29,15 +32,13 @@ module.exports = {
             });
     },
     updateOne: function (req, res) {
-        Actor.findOneAndUpdate({ _id: req.params.id }, req.body, function (err, actor) {
-            if (err) return res.status(400).json(err);
-            if (!actor) return res.status(404).json();
-            res.json(actor);
+        Actor.findOneAndUpdate({ _id: req.params.id }, req.body, { new: true },
+            function (err, actor) {
+                if (err) return res.status(400).json(err);
+                if (!actor) return res.status(404).json();
+                res.json(actor);
         });
     },
-    removeMovie: function (req, res) {
-        Actor.findOneAndUpdate({ _id: })
-    }
     deleteOne: function (req, res) {
         Actor.findOneAndRemove({ _id: req.params.id }, function (err) {
             if (err) return res.status(400).json(err);
@@ -60,12 +61,32 @@ module.exports = {
         });
     },
     deleteActorAndMovies: function (req, res) {
-        Actor.findOneAndRemove({ _id: req.params.id }, function (err) {
-            if (err) return res.status(400).json(err);
-            Movie.deleteMany({ actors: {$in: req.params.id } }, function (err) {
-                if(err) return res.status(400).json(err);
+        Actor.findOneAndDelete({ _id: req.params.id })
+            .populate('movies').exec( (err, actor) => {
+                if (err) return res.status(400).json(err);
+                if (!actor) return res.status(404).json();
+
+                for (i = 0; i < actor.movies.length; i++) {
+                    Movie.findOneAndDelete({
+                        _id: actor.movies[i]
+                    }, (err, movie) => {
+                        if (err) return res.status(400).json(err);
+                        console.log(movie);
+                    });
+                }
                 res.json();
             })
+    },
+    removeMovie: function (req, res) {
+        Actor.findOneAndUpdate({ 
+            _id: req.params.actorId 
+        },
+        { $pullAll: { movies: [req.params.movieId] } }, 
+        { new: true }, 
+        function (err, actor) {
+            if (err) return res.status(400).json(err);
+            if (!actor) return res.status(404).json();
+            res.json(actor);
         });
     }
 };

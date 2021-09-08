@@ -3,9 +3,11 @@ var Movie = require('../models/movie');
 const mongoose = require('mongoose');
 module.exports = {
     getAll: function (req, res) {
-        Movie.find(function (err, movies) {
-            if (err) return res.status(400).json(err);
-            res.json(movies);
+        Movie.find()
+            .populate('actors')
+            .exec(function (err, movies) {
+                if (err) return res.status(400).json(err);
+                res.json(movies);
         });
     },
     createOne: function (req, res) {
@@ -26,10 +28,11 @@ module.exports = {
             });
     },
     updateOne: function (req, res) {
-        Movie.findOneAndUpdate({ _id: req.params.id }, req.body, function (err, movie) {
-            if (err) return res.status(400).json(err);
-            if (!movie) return res.status(404).json();
-            res.json(movie);
+        Movie.findOneAndUpdate({ _id: req.params.id }, req.body, { new: true },
+            function (err, movie) {
+                if (err) return res.status(400).json(err);
+                if (!movie) return res.status(404).json();
+                res.json(movie);
         });
     },
     deleteOne: function (req, res) {
@@ -51,6 +54,42 @@ module.exports = {
                     res.json(movie);
                 })
             })
+        })
+    },
+    getByYear: function (req, res) {
+        Movie.find({
+            year: {
+                $gte: req.params.year1,
+                $lte: req.params.year2
+            } 
+        })
+            .populate('actors')
+            .exec(function (err, movies) {
+                if (err) return res.status(400).json(err);
+                res.json(movies);
+        });
+    },
+    removeActor: function (req, res) {
+        Movie.findOneAndUpdate({ 
+            _id: req.params.movieId 
+        },
+        { $pullAll: { actors: [req.params.actorId] } }, 
+        { new: true }, 
+        function (err, movie) {
+            if (err) return res.status(400).json(err);
+            if (!movie) return res.status(404).json();
+            res.json(movie);
+        });
+    },
+    deleteByYear: function (req, res) {
+        Movie.deleteMany({
+            year: {
+                $gte: req.params.year1,
+                $lte: req.params.year2
+            }
+        }, function(err) {
+            if (err) return res.status(400).json(err);
+            res.json();
         })
     }
 };
