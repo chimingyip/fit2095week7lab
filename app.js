@@ -33,3 +33,4 @@ app.put('/movies/:id', movies.updateOne);
 app.put('/movies/:movieId/:actorId', movies.removeActor);
 app.delete('/movies/:id', movies.deleteOne);
 app.delete('/movies/:year1/:year2', movies.deleteByYear);
+app.put('/movies', movies.incYearForX);

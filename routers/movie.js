@@ -91,5 +91,14 @@ module.exports = {
             if (err) return res.status(400).json(err);
             res.json();
         })
-    }
+    },
+    incYearForX: function (req, res) {
+        Movie.updateMany({
+            title: /^X/
+        }, { $inc: { year: 1 } }, { new: true },
+        function (err, movies) {
+            if (err) return res.status(400).json(err);
+            res.json(movies);
+        });
+    },
 };
